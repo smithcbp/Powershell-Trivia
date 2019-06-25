@@ -1,4 +1,8 @@
-﻿
+
+Function Replace-Characters ($inputString) {
+    $inputString.replace('&quot;', '"').replace('<[^>]+>', '').replace('&#39;', "'").replace('&#32;', ' ').replace('&eacute;', 'é').replace('&rsquo;',"'").replace('&#039;',"'").replace('&#039;',"'").replace('&amp;','&')
+}
+
 function Get-TriviaCategories
 {
 	$categoriesrequest = Invoke-RestMethod -Uri "https://opentdb.com/api_category.php"
@@ -20,40 +24,20 @@ function Get-TriviaQuestion
 	elseif ($CategoryID) { $request = Invoke-RestMethod -Uri "https://opentdb.com/api.php?amount=1&category=$CategoryID" }
 	else { $request = Invoke-RestMethod -Uri "https://opentdb.com/api.php?amount=1" }
 	
-	$fullquestion = [pscustomobject]@{
-		Question = ($request.results | Select-Object -ExpandProperty question)
-		Category = ($request.results | Select-Object -ExpandProperty category)
-		Correct_Answer = ($request.results | Select-Object -ExpandProperty correct_answer)
-		Incorrect_Answers = ($request.results | Select-Object -ExpandProperty incorrect_answers)
-		Difficulty = ($request.results | Select-Object -ExpandProperty difficulty)
-		All_Answers = (@($request.results | Select-Object -ExpandProperty correct_answer) + ($request.results | Select-Object -ExpandProperty incorrect_answers))
-	}
+    $fullquestion = [pscustomobject]@{
+	    Question = $request.results.question
+	    Category = $request.results.category
+	    Correct_Answer = $request.results.correct_answer
+	    Incorrect_Answers = $request.results.incorrect_answers
+	    Difficulty = $request.results.difficulty
+	    All_Answers = (@($request.results.correct_answer) + ($request.results.incorrect_answers))
+}
 	
-    $fullquestion.Question = $fullquestion.Question.replace('&quot;', '"')
-    $fullquestion.Question = $fullquestion.Question.replace('<[^>]+>', '')
-    $fullquestion.Question = $fullquestion.Question.replace('&#39;', "'")
-    $fullquestion.Question = $fullquestion.Question.replace('&#039;', "'")
-    $fullquestion.Question = $fullquestion.Question.replace('&#32;', ' ')
-    $fullquestion.Question = $fullquestion.Question.replace('&eacute;', 'é')
-    $fullquestion.Correct_Answer = $fullquestion.Correct_Answer.replace('&quot;', '"')
-    $fullquestion.Correct_Answer = $fullquestion.Correct_Answer.replace('<[^>]+>', '')
-    $fullquestion.Correct_Answer = $fullquestion.Correct_Answer.replace('&#39;', "'")
-    $fullquestion.Correct_Answer = $fullquestion.Correct_Answer.replace('&#039;', "'")
-    $fullquestion.Correct_Answer = $fullquestion.Correct_Answer.replace('&#32;', ' ')
-    $fullquestion.Correct_Answer = $fullquestion.Correct_Answer.replace('&eacute;', 'é')
-    $fullquestion.InCorrect_Answers = $fullquestion.InCorrect_Answers.replace('&quot;', '"')
-    $fullquestion.InCorrect_Answers = $fullquestion.InCorrect_Answers.replace('<[^>]+>', '')
-    $fullquestion.InCorrect_Answers = $fullquestion.InCorrect_Answers.replace('&#39;', "'")
-    $fullquestion.InCorrect_Answers = $fullquestion.InCorrect_Answers.replace('&#039;', "'")
-    $fullquestion.InCorrect_Answers = $fullquestion.InCorrect_Answers.replace('&#32;', ' ')
-    $fullquestion.InCorrect_Answers = $fullquestion.InCorrect_Answers.replace('&eacute;', 'é')
-    $fullquestion.All_Answers = $fullquestion.All_Answers.replace('&quot;', '"')
-    $fullquestion.All_Answers = $fullquestion.All_Answers.replace('<[^>]+>', '')
-    $fullquestion.All_Answers = $fullquestion.All_Answers.replace('&#39;', "'")
-    $fullquestion.All_Answers = $fullquestion.All_Answers.replace('&#039;', "'")
-    $fullquestion.All_Answers = $fullquestion.All_Answers.replace('&#32;', ' ')
-    $fullquestion.All_Answers = $fullquestion.All_Answers.replace('&eacute;', 'é')
-    
+    $fullquestion.Question = Replace-Characters $fullquestion.Question
+    $fullquestion.Correct_Answer = Replace-Characters $fullquestion.Correct_Answer
+    $fullquestion.InCorrect_Answers = Replace-Characters $fullquestion.InCorrect_Answers
+    $fullquestion.All_Answers = Replace-Characters $fullquestion.All_Answers
+
 	$RandomAnswers = $fullquestion.All_Answers | Sort-Object { Get-Random }
 	$i = 0
 	$RandomAnswers | ForEach-Object {
@@ -62,10 +46,8 @@ function Get-TriviaQuestion
 		$_ | Add-Member NoteProperty "AnswerText" -Value $_
 	}
 	
-	
 	Write-Host -ForegroundColor Gray "`nCategory: $($fullquestion.Category)`n"
-	
-	
+		
 	Write-Host -ForegroundColor Yellow "Question: $($fullquestion.Question)`n"
 	
 	Foreach ($answer in $RandomAnswers)
@@ -105,6 +87,11 @@ Function Invoke-TriviaGame
 	if ($SelectCategory)
 	{
 		$Categories = Get-TriviaCategories
+        $RandomCategories = [pscustomobject]@{
+        id = '0'
+        name = "All Categories (Random)"
+        }
+        $Categories += $RandomCategories
 		$Categories | Format-Table
 		$Prompt = Read-Host -Prompt "Which Category?"
 		$CategoryName = $Categories | Where-Object { ($_.id -match $Prompt) -or ($_.name -match $Prompt) } | Select-Object -ExpandProperty Name
@@ -131,3 +118,5 @@ Function Invoke-TriviaGame
 	if ($Difficulty -or $CategoryName){ Write-Host "Game Settings: $Difficulty $CategoryName" }	
 	Write-Host -ForegroundColor Green "Your Final Score Was $($CorrectScore.Count) out of $NumberOfQuestions"
 }
+
+
