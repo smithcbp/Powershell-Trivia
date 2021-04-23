@@ -119,4 +119,4 @@ Function Invoke-TriviaGame
 	Write-Host -ForegroundColor Green "Your Final Score Was $($CorrectScore.Count) out of $NumberOfQuestions"
 }
 
-
+Invoke-TriviaGame
